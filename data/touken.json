@@ -1,0 +1,50 @@
+[
+  {
+        "id": 0,
+    "name": "童子切安綱 剥落 特",
+    "reading": "どうじきりやすつな はくらく",
+    "type": "太刀",
+    "rarity": "5",
+    "school": "-",
+    "kiwami": false,
+    "era": "平安時代",
+    "range": "単", 
+    "equip": ["軽歩兵、重歩兵、軽騎兵、重騎兵、盾兵"], 
+    "stats": {
+      "hp": 55,
+      "attack": 74,
+      "defense": 70,
+      "mobility": 50,
+      "power": 50,
+      "scout": 33,
+      "conceal": 34,
+      "critical": 44,
+      "graph": "../data/image/グラフ/特/0_doujikiri.png"
+    },
+   "group": ["天下五剣"], 
+   "location": {                   
+  "status": "現存",      
+  "place": "東京国立博物館", 
+  "note": "写しあり"
+},
+"cultural_property": {
+  "designation": "国宝", 
+  "since": "1951年（昭和26年）6月9日"
+},
+
+ "master": "源頼光、 足利家、豊臣秀吉、徳川家康",   
+
+    "cv": "中村悠一",
+
+    "release_date": "2025/8/12", 
+    "obtain": {
+      "イベント": ["対百鬼夜行迎撃作戦報酬"]
+
+    },
+    "link": {
+    "特": "test.html?id=0",
+    "極": ""
+  },
+    "image": "../data/image/立ち絵/特/0.jpg"
+  }
+]
