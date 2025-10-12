@@ -15,7 +15,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const toukenId = parseInt(urlParams.get("id") || 0);
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch('../data/touken.json')
+  fetch('./data/touken.json')
     .then(res => res.json())
     .then(dataArr => {
       const data = dataArr.find(d => d.id === toukenId) || dataArr[0];
