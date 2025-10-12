@@ -142,18 +142,16 @@ if (linkBody) {
 // セリフ読み込み関数
 // ---------------------
 async function loadSerifu(id) {
+
+  mainTbody.innerHTML = "";
   const res = await fetch("../data/serifu.json");
   const data = await res.json();
   const serifu = data[id];
 
   const mainTbody = document.getElementById("serifu-body");
 
-  // 既存の行を安全に削除
-  while (mainTbody.firstChild) {
-    mainTbody.removeChild(mainTbody.firstChild);
-  }
-
   for (const [category, lines] of Object.entries(serifu)) {
+    // カテゴリ見出しを tr で作る
     const catRow = document.createElement("tr");
     const catCell = document.createElement("th");
     catCell.colSpan = 2;
@@ -162,7 +160,10 @@ async function loadSerifu(id) {
     catRow.appendChild(catCell);
     mainTbody.appendChild(catRow);
 
+    // 乱舞まとめ
     const merged = mergeRanbuKeys(lines);
+
+    // buildTable の出力も全部 mainTbody に入れる
     buildTable(merged, mainTbody);
   }
 }
