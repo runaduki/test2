@@ -143,52 +143,39 @@ if (linkBody) {
 // ---------------------
 async function loadSerifu(id) {
   const res = await fetch("https://runaduki.github.io/docs/data/serifu.json");
-  const dataArr = await res.json();
-  const serifuObj = dataArr.find(item => item.id === id);
-  if (!serifuObj) {
-    console.warn("該当IDのセリフが見つかりません:", id);
-    return;
-  }
+  const data = await res.json();
 
-  let lines = serifuObj["セリフ"];
-  if (!lines) return;
+  const serifuObj = data.find(item => item.id === id);
+  if (!serifuObj || !serifuObj["セリフ"]) return;
 
-  // 乱舞系をまとめる
-  lines = mergeRanbuKeys(lines);
-
+  const serifu = serifuObj["セリフ"];
   const tbody = document.getElementById("serifu-body");
-  if (!tbody) return;
 
-  const rows = tbody.querySelectorAll("tr");
-
-  for (const row of rows) {
-    const headerCell = row.querySelector("td.sub-category-header");
+  // 既存HTMLの行を生かして値を入れる
+  for (const [key, value] of Object.entries(serifu)) {
+    // td.sub-category-header を探す
+    const headerCell = Array.from(tbody.querySelectorAll("td.sub-category-header"))
+                            .find(td => td.textContent.trim() === key);
     if (!headerCell) continue;
 
-    let key = headerCell.textContent.trim();
+    const row = headerCell.parentElement;
+    const targetCell = row.querySelector("td:last-child");
 
-    // 乱舞系の空白サブキーの場合は親キーを探す
-    let value = lines[key];
-    if (value === undefined) {
-      // 親キーを探す
-      for (const [parent, sub] of Object.entries(lines)) {
-        if (sub && sub[key] !== undefined) {
-          value = sub[key];
-          break;
+    if (Array.isArray(value)) {
+      // 配列の場合は複数行に分配
+      let currentRow = row;
+      value.forEach((v, i) => {
+        if (i > 0) currentRow = currentRow.nextElementSibling; // 次の行へ
+        if (currentRow) {
+          const cell = currentRow.querySelector("td:last-child");
+          if (cell) cell.textContent = v || "";
         }
-      }
+      });
+    } else {
+      // 文字列の場合はそのまま代入
+      targetCell.textContent = value || "";
     }
-
-    if (value === undefined) continue;
-
-    // 配列なら改行して表示
-    if (Array.isArray(value)) value = value.join("<br>");
-
-    const cell = row.querySelector("td:last-child");
-    if (cell) cell.innerHTML = value || "";
-  }
-}
-
+  
 // 乱舞系の空白キーを親に吸収
 function mergeRanbuKeys(lines) {
   if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines;
