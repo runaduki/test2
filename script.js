@@ -162,7 +162,7 @@ function fillLinkTable(data) {
 // セリフ読み込み
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("./data/serifu.json");
+  const res = await fetch("data/serifu.json");
   const data = await res.json();
   const serifuObj = data.find(item => item.id === id);
   if (!serifuObj || !serifuObj["セリフ"]) return;
