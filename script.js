@@ -142,40 +142,64 @@ if (linkBody) {
 // セリフ読み込み関数
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("https://runaduki.github.io/test2/data/serifu.json");
-  const data = await res.json();
-
-  // serifu.json は配列形式 → findで探す
-  const serifuObj = data.find(item => item.id === id);
+  const res = await fetch("../data/serifu.json");
+  const dataArr = await res.json();
+  const serifuObj = dataArr.find(item => item.id === id);
   if (!serifuObj) {
     console.warn("該当IDのセリフが見つかりません:", id);
     return;
   }
 
-  const serifu = serifuObj["セリフ"];
-  if (!serifu) {
-    console.warn("セリフデータが存在しません:", id);
-    return;
+  let lines = serifuObj["セリフ"];
+  if (!lines) return;
+
+  // 乱舞系をまとめる
+  lines = mergeRanbuKeys(lines);
+
+  const tbody = document.getElementById("serifu-body");
+  if (!tbody) return;
+
+  const rows = tbody.querySelectorAll("tr");
+
+  for (const row of rows) {
+    const headerCell = row.querySelector("td.sub-category-header");
+    if (!headerCell) continue;
+
+    let key = headerCell.textContent.trim();
+
+    // 乱舞系の空白サブキーの場合は親キーを探す
+    let value = lines[key];
+    if (value === undefined) {
+      // 親キーを探す
+      for (const [parent, sub] of Object.entries(lines)) {
+        if (sub && sub[key] !== undefined) {
+          value = sub[key];
+          break;
+        }
+      }
+    }
+
+    if (value === undefined) continue;
+
+    // 配列なら改行して表示
+    if (Array.isArray(value)) value = value.join("<br>");
+
+    const cell = row.querySelector("td:last-child");
+    if (cell) cell.innerHTML = value || "";
   }
+}
 
-  const mainTbody = document.getElementById("serifu-body");
-
-  // 既存内容を残したまま、追記したいなら下行はコメントアウト
-  // mainTbody.innerHTML = "";
-
-  // カテゴリごとにテーブル行を生成
-  for (const [category, lines] of Object.entries(serifu)) {
-    const catRow = document.createElement("tr");
-    const catCell = document.createElement("th");
-    catCell.colSpan = 2;
-    catCell.className = "category-header";
-    catCell.textContent = category;
-    catRow.appendChild(catCell);
-    mainTbody.appendChild(catRow);
-
-    const merged = mergeRanbuKeys(lines);
-    buildTable(merged, mainTbody);
+// 乱舞系の空白キーを親に吸収
+function mergeRanbuKeys(lines) {
+  if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines;
+  const merged = {};
+  for (const [key, val] of Object.entries(lines)) {
+    const baseKey = key.match(/^乱舞\d+/)?.[0] || key;
+    if (!merged[baseKey]) merged[baseKey] = {};
+    const subKey = key === baseKey ? "" : key.replace(baseKey, "").replace(/[()]/g, "");
+    merged[baseKey][subKey || ""] = val;
   }
+  return merged;
 }
 
 
