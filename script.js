@@ -164,7 +164,13 @@ function fillLinkTable(data) {
 async function loadSerifu(id) {
   const res = await fetch("data/serifu.json");
   const data = await res.json();
+  // まず該当オブジェクトを取得
   const serifuObj = data.find(item => item.id === id);
+
+  // デバッグ用に中身を確認
+  console.log("serifuObj:", serifuObj);
+  console.log("セリフ部分:", serifuObj ? serifuObj["セリフ"] : null);
+
   if (!serifuObj || !serifuObj["セリフ"]) return;
 
   const mergedSerifu = mergeRanbuKeys(serifuObj["セリフ"]);
