@@ -22,7 +22,7 @@ const toukenId = parseInt(urlParams.get("id") || 0);
 // ページ読み込み時処理
 // ---------------------
 document.addEventListener("DOMContentLoaded", () => {
-  fetch('../data/touken.json')
+  fetch('./data/touken.json')
     .then(res => res.json())
     .then(dataArr => {
       const data = dataArr.find(d => d.id === toukenId) || dataArr[0];
@@ -162,7 +162,7 @@ function fillLinkTable(data) {
 // セリフ読み込み
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("../data/serifu.json");
+  const res = await fetch("./data/serifu.json");
   const data = await res.json();
   const serifuObj = data.find(item => item.id === id);
   if (!serifuObj || !serifuObj["セリフ"]) return;
