@@ -15,7 +15,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const toukenId = parseInt(urlParams.get("id") || 0);
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch('./data/touken.json')
+  fetch('../data/touken.json')
     .then(res => res.json())
     .then(dataArr => {
       const data = dataArr.find(d => d.id === toukenId) || dataArr[0];
@@ -127,12 +127,6 @@ if (linkBody) {
   linkBody.innerHTML = `<tr><td class="value" colspan="2">${stages.join(" → ")}</td></tr>`;
 }
 
-
-
-
-
-
-
       // セリフ読み込み
       loadSerifu(data.id);
     });
@@ -142,7 +136,7 @@ if (linkBody) {
 // セリフ読み込み関数
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("./data/serifu.json");
+  const res = await fetch("../data/serifu.json");
   const data = await res.json();
 
   const serifuObj = data.find(item => item.id === id);
@@ -176,6 +170,19 @@ async function loadSerifu(id) {
       targetCell.textContent = value || "";
     }
   
+
+
+
+    if (value === undefined) continue;
+
+    // 配列なら改行して表示
+    if (Array.isArray(value)) value = value.join("<br>");
+
+    const cell = row.querySelector("td:last-child");
+    if (cell) cell.innerHTML = value || "";
+  }
+}
+
 // 乱舞系の空白キーを親に吸収
 function mergeRanbuKeys(lines) {
   if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines;
@@ -192,14 +199,15 @@ function mergeRanbuKeys(lines) {
 
 
 
+
 // 「乱舞2」「乱舞2(出陣)」などをまとめる（空白キーを親キーに吸収）
 function mergeRanbuKeys(lines) {
+  if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines; // 乱舞系以外はそのまま
   const merged = {};
   for (const [key, val] of Object.entries(lines)) {
-    const baseKey = key.match(/^乱舞\d+/)?.[0] || key; // 「乱舞2」部分だけを抜き出す
+    const baseKey = key.match(/^乱舞\d+/)?.[0] || key;
     if (!merged[baseKey]) merged[baseKey] = {};
     const subKey = key === baseKey ? "" : key.replace(baseKey, "").replace(/[()]/g, "");
-    // 空文字キーは "" として格納
     merged[baseKey][subKey || ""] = val;
   }
   return merged;
@@ -207,19 +215,20 @@ function mergeRanbuKeys(lines) {
 
 
 
-
 // 再帰的にテーブルを構築する（空白キーは親にくっつける）
 function buildTable(obj, tbody, parentKey = "") {
+  if (obj === null || obj === undefined || obj === "" || (Array.isArray(obj) && obj.every(v => v === ""))) {
+    return; // ここで何も描画しない
+  }
+
   if (typeof obj === "string") {
     const tr = document.createElement("tr");
-
     if (parentKey) {
       const tdKey = document.createElement("td");
       tdKey.className = "label";
       tdKey.textContent = parentKey;
       tr.appendChild(tdKey);
     }
-
     const tdVal = document.createElement("td");
     tdVal.innerHTML = formatValue(obj);
     tr.appendChild(tdVal);
@@ -227,8 +236,8 @@ function buildTable(obj, tbody, parentKey = "") {
 
   } else if (Array.isArray(obj)) {
     obj.forEach((line, i) => {
+      if (line === "" || line === null) return; // 空はスキップ
       const tr = document.createElement("tr");
-
       if (i === 0 && parentKey) {
         const tdKey = document.createElement("td");
         tdKey.className = "label";
@@ -236,21 +245,21 @@ function buildTable(obj, tbody, parentKey = "") {
         tdKey.textContent = parentKey;
         tr.appendChild(tdKey);
       }
-
       const tdVal = document.createElement("td");
       tdVal.innerHTML = formatValue(line);
       tr.appendChild(tdVal);
       tbody.appendChild(tr);
     });
 
-  } else if (typeof obj === "object" && obj !== null) {
+  } else if (typeof obj === "object") {
     for (const [key, val] of Object.entries(obj)) {
-      // 空白キー ("") は親カテゴリ名を引き継ぐ
+      if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.every(v => v === ""))) continue;
       const newParentKey = key === "" ? parentKey : key;
       buildTable(val, tbody, newParentKey);
     }
   }
 }
+
 // 値の表示を整える関数
 function formatValue(value) {
   if (value === null || value === undefined || value === "") {
