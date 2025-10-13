@@ -142,7 +142,7 @@ if (linkBody) {
 // セリフ読み込み関数
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("./data/serifu.json");
+  const res = await fetch("https://runaduki.github.io/docs/data/serifu.json");
   const dataArr = await res.json();
   const serifuObj = dataArr.find(item => item.id === id);
   if (!serifuObj) {
