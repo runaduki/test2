@@ -143,12 +143,12 @@ if (linkBody) {
 // ---------------------
 async function loadSerifu(id) {
 
+  const mainTbody = document.getElementById("serifu-body"); // ←これを先に！
   mainTbody.innerHTML = "";
+
   const res = await fetch("../data/serifu.json");
   const data = await res.json();
   const serifu = data[id];
-
-  const mainTbody = document.getElementById("serifu-body");
 
   for (const [category, lines] of Object.entries(serifu)) {
     // カテゴリ見出しを tr で作る
