@@ -142,9 +142,13 @@ if (linkBody) {
 // セリフ読み込み関数
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("./data/serifu.json");
+  const res = await fetch("../data/serifu.json");
   const data = await res.json();
-  const serifu = data[id];
+  const serifuObj = data.find(item => item.id === id);
+  if (!serifuObj) return;
+
+    // 🔽 これを追加！
+  const serifu = serifuObj["セリフ"];
 
   const mainTbody = document.getElementById("serifu-body");
 
@@ -168,21 +172,23 @@ async function loadSerifu(id) {
 
 
 
-// 「乱舞2」「乱舞2(出陣)」をまとめる（空白キーを親カテゴリに統合）
+// 「乱舞2」「乱舞2(出陣)」などをまとめる（空白キーを親キーに吸収）
 function mergeRanbuKeys(lines) {
   const merged = {};
   for (const [key, val] of Object.entries(lines)) {
-    const baseKey = key.match(/^乱舞\d+/)?.[0] || key; // 例: "乱舞2" を抽出
+    const baseKey = key.match(/^乱舞\d+/)?.[0] || key; // 「乱舞2」部分だけを抜き出す
     if (!merged[baseKey]) merged[baseKey] = {};
-
-    // 例: "乱舞2(出陣)" → subKey = "出陣"
     const subKey = key === baseKey ? "" : key.replace(baseKey, "").replace(/[()]/g, "");
+    // 空文字キーは "" として格納
     merged[baseKey][subKey || ""] = val;
   }
   return merged;
 }
 
-// テーブル生成（空白キーを親キーに吸収して構造を保つ）
+
+
+
+// 再帰的にテーブルを構築する（空白キーは親にくっつける）
 function buildTable(obj, tbody, parentKey = "") {
   if (typeof obj === "string") {
     const tr = document.createElement("tr");
@@ -198,10 +204,8 @@ function buildTable(obj, tbody, parentKey = "") {
     tdVal.innerHTML = formatValue(obj);
     tr.appendChild(tdVal);
     tbody.appendChild(tr);
-    return;
-  }
 
-  if (Array.isArray(obj)) {
+  } else if (Array.isArray(obj)) {
     obj.forEach((line, i) => {
       const tr = document.createElement("tr");
 
@@ -218,16 +222,26 @@ function buildTable(obj, tbody, parentKey = "") {
       tr.appendChild(tdVal);
       tbody.appendChild(tr);
     });
-    return;
-  }
 
-  if (typeof obj === "object" && obj !== null) {
+  } else if (typeof obj === "object" && obj !== null) {
     for (const [key, val] of Object.entries(obj)) {
-      // 空白キー ("") は親キーとして継承
-      const nextKey = key === "" ? parentKey : key;
-      buildTable(val, tbody, nextKey);
+      // 空白キー ("") は親カテゴリ名を引き継ぐ
+      const newParentKey = key === "" ? parentKey : key;
+      buildTable(val, tbody, newParentKey);
     }
   }
+}
+// 値の表示を整える関数
+function formatValue(value) {
+  if (value === null || value === undefined || value === "") {
+    // 未実装
+    return '<span class="no-voice"></span>';
+  }
+  if (value === "？") {
+    // 未判明
+    return '<span class="unknown-voice">？</span>';
+  }
+  return value; // 通常はそのまま表示
 }
 
 // セリフ開閉
