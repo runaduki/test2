@@ -16,34 +16,22 @@ const toukenId = urlParams.get("id") || "0"; // ← "0"（文字列）のまま�
 
 document.addEventListener("DOMContentLoaded", () => {
   fetch("./data/serifu.json")
-    .then(res => {
-      if (!res.ok) throw new Error(`JSON読み込み失敗: ${res.status}`);
-      return res.json();
-    })
+    .then(res => res.json())
     .then(dataArr => {
-      // dataArrは配列、その0番目がオブジェクト
       const data = dataArr[0];
       const serifuData = data[toukenId];
+      if (!serifuData) return;
 
-      if (!serifuData) {
-        console.error(`ID「${toukenId}」のセリフが見つかりません。`);
-        return;
-      }
+      // HTML構築
+      const basic = document.getElementById('basic-info');
+      basic.innerHTML = `...`;
 
-      const serifu = serifuData["セリフ"];
-      if (!serifu) {
-        console.error(`ID「${toukenId}」の「セリフ」データが存在しません。`);
-        return;
-      }
-
-      // ここで Object.entries を安全に使える
-      for (const [category, lines] of Object.entries(serifu)) {
-        console.log(category, lines);
-        // ここにHTML構築ロジックを入れる
-      }
+      // ステータス、入手方法、リンク表示、セリフ読み込みなど
+      loadSerifu(toukenId);
     })
-    .catch(err => console.error("データ読み込みエラー:", err));
+    .catch(err => console.error(err));
 });
+
 
       // 基本情報
       const basic = document.getElementById('basic-info');
