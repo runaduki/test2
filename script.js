@@ -142,18 +142,29 @@ if (linkBody) {
 // セリフ読み込み関数
 // ---------------------
 async function loadSerifu(id) {
-  const res = await fetch("../data/serifu.json");
+  const res = await fetch("./data/serifu.json");
   const data = await res.json();
-  const serifuObj = data.find(item => item.id === id);
-  if (!serifuObj) return;
 
-    // 🔽 これを追加！
+  // serifu.json は配列形式 → findで探す
+  const serifuObj = data.find(item => item.id === id);
+  if (!serifuObj) {
+    console.warn("該当IDのセリフが見つかりません:", id);
+    return;
+  }
+
   const serifu = serifuObj["セリフ"];
+  if (!serifu) {
+    console.warn("セリフデータが存在しません:", id);
+    return;
+  }
 
   const mainTbody = document.getElementById("serifu-body");
 
+  // 既存内容を残したまま、追記したいなら下行はコメントアウト
+  // mainTbody.innerHTML = "";
+
+  // カテゴリごとにテーブル行を生成
   for (const [category, lines] of Object.entries(serifu)) {
-    // カテゴリ見出しを tr で作る
     const catRow = document.createElement("tr");
     const catCell = document.createElement("th");
     catCell.colSpan = 2;
@@ -162,13 +173,11 @@ async function loadSerifu(id) {
     catRow.appendChild(catCell);
     mainTbody.appendChild(catRow);
 
-    // 乱舞まとめ
     const merged = mergeRanbuKeys(lines);
-
-    // buildTable の出力も全部 mainTbody に入れる
     buildTable(merged, mainTbody);
   }
 }
+
 
 
 
@@ -243,6 +252,7 @@ function formatValue(value) {
   }
   return value; // 通常はそのまま表示
 }
+
 
 // セリフ開閉
 document.addEventListener("DOMContentLoaded", () => {
