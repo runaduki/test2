@@ -1,4 +1,6 @@
-// 刀装
+// ---------------------
+// 刀装マスター
+// ---------------------
 const equipMaster = {
   "短刀": ["軽歩兵","重歩兵","投石兵","弓兵","銃兵"],
   "脇差": ["軽歩兵","重歩兵","投石兵","弓兵","盾兵"],
@@ -10,97 +12,130 @@ const equipMaster = {
   "剣": ["軽歩兵","重歩兵","精鋭兵","弓兵","銃兵","盾兵"]
 };
 
-// URLパラメータからid取得
+// ---------------------
+// URLパラメータからID取得
+// ---------------------
 const urlParams = new URLSearchParams(window.location.search);
 const toukenId = parseInt(urlParams.get("id") || 0);
 
+// ---------------------
+// ページ読み込み時処理
+// ---------------------
 document.addEventListener("DOMContentLoaded", () => {
   fetch('../data/touken.json')
     .then(res => res.json())
     .then(dataArr => {
       const data = dataArr.find(d => d.id === toukenId) || dataArr[0];
 
-      // 基本情報
-      const basic = document.getElementById('basic-info');
-      basic.innerHTML = `
-        <tr><th colspan="7" class="section-header">${data.id}番</th></tr>
-        <tr>
-          <td class="image-cell" rowspan="7">
-            <img src="${data.image || ''}" alt="刀剣画像">
-          </td>
-          <td class="label">名前</td>
-          <td class="value" colspan="2">${data.name || ""}<br>（${data.reading || ""}）</td>
-        </tr>
-        <tr><td class="label">刀種</td><td class="value">${data.type || ""}</td></tr>
-        <tr><td class="label">刀派</td><td class="value">${data.school || ""}</td></tr>
-        <tr><td class="label">作成時期</td><td class="value">${data.era || ""}</td></tr>
-        <tr><td class="label">声優</td><td class="value">${data.cv || ""}</td></tr>
-        <tr><td class="label">刀装</td><td class="value">${equipMaster[data.type]?.join('、') || ""}</td></tr>
-      `;
+      fillBasicInfo(data);
+      fillStatusTable(data);
+      fillAcquisitionTable(data);
+      fillCategoryTable(data);
+      fillLinkTable(data);
 
-      // ステータス
-      const status = document.getElementById('status-table');
-      const statusLabels = {
-        hp: "生存",
-        attack: "打撃",
-        defense: "統率",
-        mobility: "機動",
-        power: "衝力",
-        scout: "偵察",
-        conceal: "隠蔽",
-        critical: "必殺"
-      };
-      let total = Object.keys(statusLabels).reduce((sum, k) => sum + (data.stats?.[k] || 0), 0);
+      loadSerifu(data.id);
+    });
+});
 
-      let statusHTML = `<tr><th colspan="4" class="section-header">ステータス</th></tr>`;
-      statusHTML += `<tr><td colspan="4" class="graph-cell">
-                       <img src="${data.stats?.graph || ''}" alt="グラフ">
-                     </td></tr>`;
-      statusHTML += `<tr><td class="label">総合</td><td class="value" colspan="3">${total}</td></tr>`;
+// ---------------------
+// 基本情報
+// ---------------------
+function fillBasicInfo(data) {
+  const basic = document.getElementById('basic-info');
+  basic.innerHTML = `
+    <tr><th colspan="7" class="section-header">${data.id}番</th></tr>
+    <tr>
+      <td class="image-cell" rowspan="7">
+        <img src="${data.image || ''}" alt="刀剣画像">
+      </td>
+      <td class="label">名前</td>
+      <td class="value" colspan="2">${data.name || ""}<br>（${data.reading || ""}）</td>
+    </tr>
+    <tr><td class="label">刀種</td><td class="value">${data.type || ""}</td></tr>
+    <tr><td class="label">刀派</td><td class="value">${data.school || ""}</td></tr>
+    <tr><td class="label">作成時期</td><td class="value">${data.era || ""}</td></tr>
+    <tr><td class="label">声優</td><td class="value">${data.cv || ""}</td></tr>
+    <tr><td class="label">刀装</td><td class="value">${equipMaster[data.type]?.join('、') || ""}</td></tr>
+  `;
+}
 
-      const statKeys = Object.keys(statusLabels);
-      for (let i = 0; i < statKeys.length; i += 2) {
-        statusHTML += `<tr>
-          <td class="label">${statusLabels[statKeys[i]]}</td>
-          <td class="value">${data.stats?.[statKeys[i]] || ""}</td>`;
-        if (statKeys[i + 1]) {
-          statusHTML += `<td class="label">${statusLabels[statKeys[i + 1]]}</td>
-                         <td class="value">${data.stats?.[statKeys[i + 1]] || ""}</td>`;
-        } else {
-          statusHTML += `<td></td><td></td>`;
-        }
-        statusHTML += `</tr>`;
-      }
-      statusHTML += `<tr><td class="label">範囲</td><td class="value">${data.range || ""}</td>
-                     <td class="label">スロット</td><td class="value">3</td></tr>`;
-      status.innerHTML = statusHTML;
+// ---------------------
+// ステータス表
+// ---------------------
+function fillStatusTable(data) {
+  const status = document.getElementById('status-table');
+  const statusLabels = {
+    hp: "生存",
+    attack: "打撃",
+    defense: "統率",
+    mobility: "機動",
+    power: "衝力",
+    scout: "偵察",
+    conceal: "隠蔽",
+    critical: "必殺"
+  };
+  let total = Object.keys(statusLabels).reduce((sum, k) => sum + (data.stats?.[k] || 0), 0);
 
-      // 入手方法
-      const acquisition = document.getElementById('acquisition-table');
-      let acqHTML = `<tr><th class="section-header" colspan="2">入手方法</th></tr>`;
-      acqHTML += `<tr><td class="label">実装日</td><td class="value">${data.release_date || ""}</td></tr>`;
-      for (let key in data.obtain || {}) {
-        acqHTML += `<tr><td class="label">${key}</td>
-                    <td class="value">${Array.isArray(data.obtain[key]) ? data.obtain[key].join('、') : ""}</td></tr>`;
-      }
-      acquisition.innerHTML = acqHTML;
+  let statusHTML = `<tr><th colspan="4" class="section-header">ステータス</th></tr>`;
+  statusHTML += `<tr><td colspan="4" class="graph-cell">
+                   <img src="${data.stats?.graph || ''}" alt="グラフ">
+                 </td></tr>`;
+  statusHTML += `<tr><td class="label">総合</td><td class="value" colspan="3">${total}</td></tr>`;
 
-      // 区分
-      const category = document.getElementById('category-table');
-      let catHTML = `<tr><th class="section-header" colspan="2">区分</th></tr>`;
-      catHTML += `<tr><td class="label">現況</td><td class="value">${data.location?.status || ""}</td></tr>`;
-      catHTML += `<tr><td class="label">所蔵先</td><td class="value">${data.location?.place || ""}</td></tr>`;
-      catHTML += `<tr><td class="label">備考</td><td class="value">${data.location?.note || ""}</td></tr>`;
-      catHTML += `<tr><td class="label">文化財区分</td><td class="value">${data.cultural_property?.designation || ""} (${data.cultural_property?.since || ""})</td></tr>`;
-      catHTML += `<tr><td class="label">所有者</td><td class="value">${data.master || ""}</td></tr>`;
-      category.innerHTML = catHTML;
+  const statKeys = Object.keys(statusLabels);
+  for (let i = 0; i < statKeys.length; i += 2) {
+    statusHTML += `<tr>
+      <td class="label">${statusLabels[statKeys[i]]}</td>
+      <td class="value">${data.stats?.[statKeys[i]] || ""}</td>`;
+    if (statKeys[i + 1]) {
+      statusHTML += `<td class="label">${statusLabels[statKeys[i + 1]]}</td>
+                     <td class="value">${data.stats?.[statKeys[i + 1]] || ""}</td>`;
+    } else {
+      statusHTML += `<td></td><td></td>`;
+    }
+    statusHTML += `</tr>`;
+  }
+  statusHTML += `<tr><td class="label">範囲</td><td class="value">${data.range || ""}</td>
+                 <td class="label">スロット</td><td class="value">3</td></tr>`;
+  status.innerHTML = statusHTML;
+}
 
-// リンク表示部分
-const linkBody = document.getElementById('link-body');
+// ---------------------
+// 入手方法
+// ---------------------
+function fillAcquisitionTable(data) {
+  const acquisition = document.getElementById('acquisition-table');
+  let acqHTML = `<tr><th class="section-header" colspan="2">入手方法</th></tr>`;
+  acqHTML += `<tr><td class="label">実装日</td><td class="value">${data.release_date || ""}</td></tr>`;
+  for (let key in data.obtain || {}) {
+    acqHTML += `<tr><td class="label">${key}</td>
+                <td class="value">${Array.isArray(data.obtain[key]) ? data.obtain[key].join('、') : ""}</td></tr>`;
+  }
+  acquisition.innerHTML = acqHTML;
+}
 
-if (linkBody) {
-  // URLがあるものだけ取得してID順に並べる
-  const stages = Object.entries(data.link)
+// ---------------------
+// 区分
+// ---------------------
+function fillCategoryTable(data) {
+  const category = document.getElementById('category-table');
+  let catHTML = `<tr><th class="section-header" colspan="2">区分</th></tr>`;
+  catHTML += `<tr><td class="label">現況</td><td class="value">${data.location?.status || ""}</td></tr>`;
+  catHTML += `<tr><td class="label">所蔵先</td><td class="value">${data.location?.place || ""}</td></tr>`;
+  catHTML += `<tr><td class="label">備考</td><td class="value">${data.location?.note || ""}</td></tr>`;
+  catHTML += `<tr><td class="label">文化財区分</td><td class="value">${data.cultural_property?.designation || ""} (${data.cultural_property?.since || ""})</td></tr>`;
+  catHTML += `<tr><td class="label">所有者</td><td class="value">${data.master || ""}</td></tr>`;
+  category.innerHTML = catHTML;
+}
+
+// ---------------------
+// リンクテーブル
+// ---------------------
+function fillLinkTable(data) {
+  const linkBody = document.getElementById('link-body');
+  if (!linkBody) return;
+
+  const stages = Object.entries(data.link || {})
     .filter(([_, url]) => url)
     .sort(([aName, aUrl], [bName, bUrl]) => {
       const aId = parseInt(aUrl.match(/id=(\d+)/)[1]);
@@ -114,76 +149,31 @@ if (linkBody) {
         if (stageName === "特二") lv = 50;
         if (stageName === "特三") lv = 75;
       }
-
-      // 名前にstageNameが含まれる場合は重複させない
       const stageText = data.name.includes(stageName) ? "" : ` ${stageName}`;
       const linkText = `${data.name}${stageText}`;
       const lvText = lv ? ` (Lv.${lv})` : "";
-
       return `<a href="${url}">${linkText}</a>${lvText}`;
     });
 
-  // 矢印でつなぐ
   linkBody.innerHTML = `<tr><td class="value" colspan="2">${stages.join(" → ")}</td></tr>`;
 }
 
-      // セリフ読み込み
-      loadSerifu(data.id);
-    });
-});
-
 // ---------------------
-// セリフ読み込み関数
+// セリフ読み込み
 // ---------------------
 async function loadSerifu(id) {
   const res = await fetch("../data/serifu.json");
   const data = await res.json();
-
   const serifuObj = data.find(item => item.id === id);
   if (!serifuObj || !serifuObj["セリフ"]) return;
 
-  const serifu = serifuObj["セリフ"];
-  const tbody = document.getElementById("serifu-body");
-
-  // 既存HTMLの行を生かして値を入れる
-  for (const [key, value] of Object.entries(serifu)) {
-    // td.sub-category-header を探す
-    const headerCell = Array.from(tbody.querySelectorAll("td.sub-category-header"))
-                            .find(td => td.textContent.trim() === key);
-    if (!headerCell) continue;
-
-    const row = headerCell.parentElement;
-    const targetCell = row.querySelector("td:last-child");
-
-    if (Array.isArray(value)) {
-      // 配列の場合は複数行に分配
-      let currentRow = row;
-      value.forEach((v, i) => {
-        if (i > 0) currentRow = currentRow.nextElementSibling; // 次の行へ
-        if (currentRow) {
-          const cell = currentRow.querySelector("td:last-child");
-          if (cell) cell.textContent = v || "";
-        }
-      });
-    } else {
-      // 文字列の場合はそのまま代入
-      targetCell.textContent = value || "";
-    }
-  
-
-
-
-    if (value === undefined) continue;
-
-    // 配列なら改行して表示
-    if (Array.isArray(value)) value = value.join("<br>");
-
-    const cell = row.querySelector("td:last-child");
-    if (cell) cell.innerHTML = value || "";
-  }
+  const mergedSerifu = mergeRanbuKeys(serifuObj["セリフ"]);
+  fillSerifuFixedHTML(mergedSerifu);
 }
 
+// ---------------------
 // 乱舞系の空白キーを親に吸収
+// ---------------------
 function mergeRanbuKeys(lines) {
   if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines;
   const merged = {};
@@ -196,85 +186,43 @@ function mergeRanbuKeys(lines) {
   return merged;
 }
 
+// ---------------------
+// 固定HTML行にセリフを流し込む
+// ---------------------
+function fillSerifuFixedHTML(serifu) {
+  const tbody = document.getElementById("serifu-body");
 
+  for (const [key, val] of Object.entries(serifu)) {
+    const subKeys = typeof val === "object" && !Array.isArray(val) ? val : {"": val};
 
+    for (const [subKey, value] of Object.entries(subKeys)) {
+      const searchKey = subKey ? `${key}${subKey}` : key;
+      const headerCell = Array.from(tbody.querySelectorAll("td.sub-category-header"))
+                              .find(td => td.textContent.trim() === searchKey);
+      if (!headerCell) continue;
 
+      const row = headerCell.parentElement;
+      const targetCell = row.querySelector("td:last-child");
 
-// 「乱舞2」「乱舞2(出陣)」などをまとめる（空白キーを親キーに吸収）
-function mergeRanbuKeys(lines) {
-  if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines; // 乱舞系以外はそのまま
-  const merged = {};
-  for (const [key, val] of Object.entries(lines)) {
-    const baseKey = key.match(/^乱舞\d+/)?.[0] || key;
-    if (!merged[baseKey]) merged[baseKey] = {};
-    const subKey = key === baseKey ? "" : key.replace(baseKey, "").replace(/[()]/g, "");
-    merged[baseKey][subKey || ""] = val;
-  }
-  return merged;
-}
-
-
-
-// 再帰的にテーブルを構築する（空白キーは親にくっつける）
-function buildTable(obj, tbody, parentKey = "") {
-  if (obj === null || obj === undefined || obj === "" || (Array.isArray(obj) && obj.every(v => v === ""))) {
-    return; // ここで何も描画しない
-  }
-
-  if (typeof obj === "string") {
-    const tr = document.createElement("tr");
-    if (parentKey) {
-      const tdKey = document.createElement("td");
-      tdKey.className = "label";
-      tdKey.textContent = parentKey;
-      tr.appendChild(tdKey);
-    }
-    const tdVal = document.createElement("td");
-    tdVal.innerHTML = formatValue(obj);
-    tr.appendChild(tdVal);
-    tbody.appendChild(tr);
-
-  } else if (Array.isArray(obj)) {
-    obj.forEach((line, i) => {
-      if (line === "" || line === null) return; // 空はスキップ
-      const tr = document.createElement("tr");
-      if (i === 0 && parentKey) {
-        const tdKey = document.createElement("td");
-        tdKey.className = "label";
-        tdKey.rowSpan = obj.length;
-        tdKey.textContent = parentKey;
-        tr.appendChild(tdKey);
+      if (Array.isArray(value)) {
+        let currentRow = row;
+        value.forEach((v, i) => {
+          if (i > 0) currentRow = currentRow.nextElementSibling;
+          if (currentRow) {
+            const cell = currentRow.querySelector("td:last-child");
+            if (cell) cell.textContent = v || "";
+          }
+        });
+      } else {
+        targetCell.textContent = value || "";
       }
-      const tdVal = document.createElement("td");
-      tdVal.innerHTML = formatValue(line);
-      tr.appendChild(tdVal);
-      tbody.appendChild(tr);
-    });
-
-  } else if (typeof obj === "object") {
-    for (const [key, val] of Object.entries(obj)) {
-      if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.every(v => v === ""))) continue;
-      const newParentKey = key === "" ? parentKey : key;
-      buildTable(val, tbody, newParentKey);
     }
   }
 }
 
-// 値の表示を整える関数
-function formatValue(value) {
-  if (value === null || value === undefined || value === "") {
-    // 未実装
-    return '<span class="no-voice"></span>';
-  }
-  if (value === "？") {
-    // 未判明
-    return '<span class="unknown-voice">？</span>';
-  }
-  return value; // 通常はそのまま表示
-}
-
-
+// ---------------------
 // セリフ開閉
+// ---------------------
 document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("serifu-body");
   const serifuTable = document.getElementById("serifu-table");
@@ -288,5 +236,4 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.style.display = open ? "table-row-group" : "none";
     header.textContent = open ? "セリフ一覧 ▼" : "セリフ一覧 ▲";
   });
-
 });
