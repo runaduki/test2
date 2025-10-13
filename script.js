@@ -168,46 +168,43 @@ async function loadSerifu(id) {
 
 
 
-// 「乱舞2」「乱舞2(出陣)」をまとめる
+// 「乱舞2」「乱舞2(出陣)」をまとめる（空白キーを親カテゴリに統合）
 function mergeRanbuKeys(lines) {
   const merged = {};
   for (const [key, val] of Object.entries(lines)) {
-    const baseKey = key.match(/^乱舞\d+/)?.[0] || key;
+    const baseKey = key.match(/^乱舞\d+/)?.[0] || key; // 例: "乱舞2" を抽出
     if (!merged[baseKey]) merged[baseKey] = {};
-    const subKey = key === baseKey ? "　" : key.replace(baseKey, "").replace(/[()]/g, "");
-    merged[baseKey][subKey || "　"] = val;
+
+    // 例: "乱舞2(出陣)" → subKey = "出陣"
+    const subKey = key === baseKey ? "" : key.replace(baseKey, "").replace(/[()]/g, "");
+    merged[baseKey][subKey || ""] = val;
   }
   return merged;
 }
 
-// 未実装・未判明表示
-function formatValue(value) {
-  if (value === null || value === undefined || value === "") {
-    return '<span class="no-voice"></span>'; // 未実装
-  }
-  if (value === "？") {
-    return '<span class="unknown-voice">？</span>'; // 未判明
-  }
-  return value;
-}
-
-// テーブル生成
+// テーブル生成（空白キーを親キーに吸収して構造を保つ）
 function buildTable(obj, tbody, parentKey = "") {
   if (typeof obj === "string") {
     const tr = document.createElement("tr");
+
     if (parentKey) {
       const tdKey = document.createElement("td");
       tdKey.className = "label";
       tdKey.textContent = parentKey;
       tr.appendChild(tdKey);
     }
+
     const tdVal = document.createElement("td");
     tdVal.innerHTML = formatValue(obj);
     tr.appendChild(tdVal);
     tbody.appendChild(tr);
-  } else if (Array.isArray(obj)) {
+    return;
+  }
+
+  if (Array.isArray(obj)) {
     obj.forEach((line, i) => {
       const tr = document.createElement("tr");
+
       if (i === 0 && parentKey) {
         const tdKey = document.createElement("td");
         tdKey.className = "label";
@@ -215,14 +212,20 @@ function buildTable(obj, tbody, parentKey = "") {
         tdKey.textContent = parentKey;
         tr.appendChild(tdKey);
       }
+
       const tdVal = document.createElement("td");
       tdVal.innerHTML = formatValue(line);
       tr.appendChild(tdVal);
       tbody.appendChild(tr);
     });
-  } else if (typeof obj === "object" && obj !== null) {
+    return;
+  }
+
+  if (typeof obj === "object" && obj !== null) {
     for (const [key, val] of Object.entries(obj)) {
-      buildTable(val, tbody, key);
+      // 空白キー ("") は親キーとして継承
+      const nextKey = key === "" ? parentKey : key;
+      buildTable(val, tbody, nextKey);
     }
   }
 }
