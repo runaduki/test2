@@ -163,7 +163,7 @@ function fillLinkTable(data) {
 // ---------------------
   async function loadSerifu(id) {
   try {
-    const res = await fetch("data/serifu.json");
+    const res = await fetch("./data/serifu.json");
     const data = await res.json();
 
     // dataが配列で、各要素が { id: n, "セリフ": { ... } } の形をしている前提
