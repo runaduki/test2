@@ -19,7 +19,7 @@
       "scout": 33,
       "conceal": 34,
       "critical": 44,
-      "graph": "../data/image/グラフ/特/0_doujikiri.png"
+      "graph": "/data/image/グラフ/特/0_doujikiri.png"
     },
    "group": ["天下五剣"], 
    "location": {                   
