@@ -216,16 +216,17 @@ function fillLinkTable(data) {
         }
 
         // 単一値（文字列 or null）
-// 単一値（文字列 or null）
+
 const el = document.getElementById(key);
 if (el) {
   if (val === null) {
-    // 🔽 追加ここから：nullなら親<tr>を非表示
+    // 🔽 null のとき、その行を非表示にする
     const tr = el.closest("tr");
     if (tr) tr.style.display = "none";
-    continue; // これで以降処理をスキップ
-    // 🔼 追加ここまで
+    // null の場合は次の項目へ（←ここは return じゃなく continue）
+    continue;
   }
+
   el.textContent = val ?? ""; // null でなければ普通に表示（"" はOK）
 } else {
   console.warn(`セルが見つかりません: id="${key}" value="${val}"`);
