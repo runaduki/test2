@@ -161,70 +161,101 @@ function fillLinkTable(data) {
 // ---------------------
 // セリフ読み込み
 // ---------------------
-async function loadSerifu(id) {
-  const res = await fetch("data/serifu.json");
-  const data = await res.json();
-  // まず該当オブジェクトを取得
-  const serifuObj = data.find(item => item.id === id);
+   const data = await res.json();
 
-  // デバッグ用に中身を確認
-  console.log("serifuObj:", serifuObj);
-  console.log("セリフ部分:", serifuObj ? serifuObj["セリフ"] : null);
+    // dataが配列で、各要素が { id: n, "セリフ": { ... } } の形をしている前提
+    const serifuObj = Array.isArray(data) ? data.find(item => item.id === id) : (data[id] || null);
+    if (!serifuObj) {
+      console.warn(`ID ${id} のオブジェクトが見つかりません`);
+      return;
+    }
+    const serifu = serifuObj["セリフ"] || serifuObj["セリフ一覧"] || serifuObj; // 安全対策
 
-  if (!serifuObj || !serifuObj["セリフ"]) return;
+    // 既存のセルをクリア（任意）
+    clearSerifuCells();
+    function toggleRowVisibility(cell, value) {
+      const tr = cell.closest("tr");
+      if (!tr) return;
+      const isEmpty = value == null || String(value).trim() === "";
+      tr.style.display = isEmpty ? "none" : "";
+    }
 
-  const mergedSerifu = mergeRanbuKeys(serifuObj["セリフ"]);
-  fillSerifuFixedHTML(mergedSerifu);
-}
+    // 再帰的にオブジェクトを走査して id と一致する要素に代入する
+    function applyValues(obj) {
+      for (const [key, val] of Object.entries(obj)) {
+        if (val && typeof val === "object" && !Array.isArray(val)) {
+          // ネストしているオブジェクトは深掘り
+          applyValues(val);
+          continue;
+        }
 
-// ---------------------
-// 乱舞系の空白キーを親に吸収
-// ---------------------
-function mergeRanbuKeys(lines) {
-  if (!lines || !Object.keys(lines).some(k => k.startsWith("乱舞"))) return lines;
-  const merged = {};
-  for (const [key, val] of Object.entries(lines)) {
-    const baseKey = key.match(/^乱舞\d+/)?.[0] || key;
-    if (!merged[baseKey]) merged[baseKey] = {};
-    const subKey = key === baseKey ? "" : key.replace(baseKey, "").replace(/[()]/g, "");
-    merged[baseKey][subKey || ""] = val;
-  }
-  return merged;
-}
-
-// ---------------------
-// 固定HTML行にセリフを流し込む
-// ---------------------
-function fillSerifuFixedHTML(serifu) {
-  const tbody = document.getElementById("serifu-body");
-
-  for (const [key, val] of Object.entries(serifu)) {
-    const subKeys = typeof val === "object" && !Array.isArray(val) ? val : {"": val};
-
-    for (const [subKey, value] of Object.entries(subKeys)) {
-      const searchKey = subKey ? `${key}${subKey}` : key;
-      const headerCell = Array.from(tbody.querySelectorAll("td.sub-category-header"))
-                              .find(td => td.textContent.trim() === searchKey);
-      if (!headerCell) continue;
-
-      const row = headerCell.parentElement;
-      const targetCell = row.querySelector("td:last-child");
-
-      if (Array.isArray(value)) {
-        let currentRow = row;
-        value.forEach((v, i) => {
-          if (i > 0) currentRow = currentRow.nextElementSibling;
-          if (currentRow) {
-            const cell = currentRow.querySelector("td:last-child");
-            if (cell) cell.textContent = v || "";
+        // val は文字列か null か配列（配列は特殊処理）
+        if (Array.isArray(val)) {
+          // 配列の場合、 id に "_1", "_2" のように結合しているケースを試す
+          for (let i = 0; i < val.length; i++) {
+            const attemptIds = [
+              `${key}_${i+1}`,   // ex: honmaru_1 が JSON では ["a","b"] で来る場合
+              `${key}${i+1}`,    // ex: honmaru1
+              key                // まずは素の key を試す
+            ];
+            let placed = false;
+            for (const aid of attemptIds) {
+              const el = document.getElementById(aid);
+              if (el) {
+                el.textContent = val[i] ?? "";
+                toggleRowVisibility(el, val[i]);
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) {
+              console.warn(`配列要素を挿入できませんでした: ${key}[${i}] -> 該当するセルが見つかりません`);
+            }
           }
-        });
-      } else {
-        targetCell.textContent = value || "";
+          continue;
+        }
+
+        // 単一値（文字列 or null）
+// 単一値（文字列 or null）
+const el = document.getElementById(key);
+if (el) {
+  if (val === null) {
+    // 🔽 追加ここから：nullなら親<tr>を非表示
+    const tr = el.closest("tr");
+    if (tr) tr.style.display = "none";
+    continue; // これで以降処理をスキップ
+    // 🔼 追加ここまで
+  }
+  el.textContent = val ?? ""; // null でなければ普通に表示（"" はOK）
+} else {
+  console.warn(`セルが見つかりません: id="${key}" value="${val}"`);
+}
+
       }
     }
+
+    applyValues(serifu);
+    console.log("セリフ反映完了:", serifuObj);
+
+  } catch (err) {
+    console.error("セリフ読み込みに失敗しました:", err);
   }
 }
+
+// 既存の td[id] を初期化したいときに便利
+function clearSerifuCells() {
+  // table 内のすべての id を持つセルを対象にする（必要に応じてセレクタを絞ってください）
+  const tbody = document.getElementById("serifu-body");
+  if (!tbody) return;
+  // セルは <td id="..."> の形で存在すると仮定
+  const idCells = tbody.querySelectorAll("td[id]");
+  idCells.forEach(td => td.textContent = "");
+}
+
+// ページ読み込み時の自動実行（例）
+document.addEventListener("DOMContentLoaded", () => {
+  loadSerifu(0); // 例: ID 0 を読み込む
+});
 
 // ---------------------
 // セリフ開閉
