@@ -3,7 +3,7 @@
 /* -------------------- */
 body {
   font-family: "Yu Gothic", sans-serif;
-  background: #fdfcf7 url('https://runaduki.github.io/test2/data/image/287_20251002180556.png') repeat;
+  background-image: url('https://runaduki.github.io/test2/data/image/287_20251002180556.png') repeat;
   padding: 20px;
   width: 650px;
   margin: 0 auto 3px;
