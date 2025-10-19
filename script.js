@@ -161,42 +161,47 @@ function fillLinkTable(data) {
 // ---------------------
 // セリフ読み込み
 // ---------------------
-   const data = await res.json();
+  async function loadSerifu(id) {
+  try {
+    const res = await fetch("../data/serifu.json");
+    const data = await res.json();
 
     // dataが配列で、各要素が { id: n, "セリフ": { ... } } の形をしている前提
-    const serifuObj = Array.isArray(data) ? data.find(item => item.id === id) : (data[id] || null);
+    const serifuObj = Array.isArray(data)
+      ? data.find(item => item.id === id)
+      : (data[id] || null);
+
     if (!serifuObj) {
       console.warn(`ID ${id} のオブジェクトが見つかりません`);
       return;
     }
-    const serifu = serifuObj["セリフ"] || serifuObj["セリフ一覧"] || serifuObj; // 安全対策
 
-    // 既存のセルをクリア（任意）
-    clearSerifuCells();
+    const serifu = serifuObj["セリフ"] || serifuObj["セリフ一覧"] || serifuObj;
+
+    clearSerifuCells(); // 初期化
+
+    // 🔽 行の表示・非表示を制御する関数
     function toggleRowVisibility(cell, value) {
       const tr = cell.closest("tr");
       if (!tr) return;
-      const isEmpty = value == null || String(value).trim() === "";
+      const isEmpty = value === null; // ← "" は表示、null のみ非表示
       tr.style.display = isEmpty ? "none" : "";
     }
 
-    // 再帰的にオブジェクトを走査して id と一致する要素に代入する
+    // 🔽 再帰的に埋め込み
     function applyValues(obj) {
       for (const [key, val] of Object.entries(obj)) {
         if (val && typeof val === "object" && !Array.isArray(val)) {
-          // ネストしているオブジェクトは深掘り
           applyValues(val);
           continue;
         }
 
-        // val は文字列か null か配列（配列は特殊処理）
         if (Array.isArray(val)) {
-          // 配列の場合、 id に "_1", "_2" のように結合しているケースを試す
           for (let i = 0; i < val.length; i++) {
             const attemptIds = [
-              `${key}_${i+1}`,   // ex: honmaru_1 が JSON では ["a","b"] で来る場合
-              `${key}${i+1}`,    // ex: honmaru1
-              key                // まずは素の key を試す
+              `${key}_${i + 1}`,
+              `${key}${i + 1}`,
+              key
             ];
             let placed = false;
             for (const aid of attemptIds) {
@@ -209,29 +214,20 @@ function fillLinkTable(data) {
               }
             }
             if (!placed) {
-              console.warn(`配列要素を挿入できませんでした: ${key}[${i}] -> 該当するセルが見つかりません`);
+              console.warn(`配列要素を挿入できませんでした: ${key}[${i}]`);
             }
           }
           continue;
         }
 
-        // 単一値（文字列 or null）
-
-const el = document.getElementById(key);
-if (el) {
-  if (val === null) {
-    // 🔽 null のとき、その行を非表示にする
-    const tr = el.closest("tr");
-    if (tr) tr.style.display = "none";
-    // null の場合は次の項目へ（←ここは return じゃなく continue）
-    continue;
-  }
-
-  el.textContent = val ?? ""; // null でなければ普通に表示（"" はOK）
-} else {
-  console.warn(`セルが見つかりません: id="${key}" value="${val}"`);
-}
-
+        // 単一値
+        const el = document.getElementById(key);
+        if (el) {
+          toggleRowVisibility(el, val); // ← null の場合 tr を非表示
+          el.textContent = val ?? "";
+        } else {
+          console.warn(`セルが見つかりません: id="${key}" value="${val}"`);
+        }
       }
     }
 
@@ -243,19 +239,16 @@ if (el) {
   }
 }
 
-// 既存の td[id] を初期化したいときに便利
+// 既存の td[id] を初期化
 function clearSerifuCells() {
-  // table 内のすべての id を持つセルを対象にする（必要に応じてセレクタを絞ってください）
   const tbody = document.getElementById("serifu-body");
   if (!tbody) return;
-  // セルは <td id="..."> の形で存在すると仮定
-  const idCells = tbody.querySelectorAll("td[id]");
-  idCells.forEach(td => td.textContent = "");
+  tbody.querySelectorAll("td[id]").forEach(td => td.textContent = "");
 }
 
-// ページ読み込み時の自動実行（例）
+// ページ読み込み時に自動実行（例）
 document.addEventListener("DOMContentLoaded", () => {
-  loadSerifu(0); // 例: ID 0 を読み込む
+  loadSerifu(0);
 });
 
 // ---------------------
