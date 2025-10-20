@@ -5,6 +5,7 @@ body {
   font-family: "Yu Gothic", sans-serif;
   background-image: url('./data/image/287_20251002180556.png') ;
   background-repeat: repeat;
+  background-position: top left;
   padding: 20px;
   width: 650px;
   margin: 0 auto 3px;
@@ -117,12 +118,6 @@ th, td {
 }
 .serifu-table th {
   background-color: #eee; text-align: center;
-}
-
-body {
-background-image: url('../data/image/287_20251002180556.png'); /* 背景柄の画像 */
-  background-repeat: repeat;       /* タイル状に繰り返す */
-  background-position: top left;         /* テーブルとの余白 */
 }
 
 /* 共通 */
